@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Overcooked 2">
+  <rect width="640" height="360" fill="#9a3412"/>
+  <circle cx="320" cy="190" r="90" fill="#fed7aa"/>
+  <circle cx="320" cy="190" r="62" fill="#fb923c"/>
+  <rect x="250" y="70" width="140" height="36" rx="8" fill="#f8fafc"/>
+  <rect x="200" y="250" width="240" height="28" rx="8" fill="#7c2d12"/>
+</svg>

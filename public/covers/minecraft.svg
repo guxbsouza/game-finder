@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Minecraft">
+  <rect width="640" height="360" fill="#14532d"/>
+  <rect x="60" y="80" width="80" height="80" fill="#4ade80"/>
+  <rect x="140" y="80" width="80" height="80" fill="#166534"/>
+  <rect x="220" y="80" width="80" height="80" fill="#22c55e"/>
+  <rect x="60" y="160" width="80" height="80" fill="#854d0e"/>
+  <rect x="140" y="160" width="80" height="80" fill="#a16207"/>
+  <rect x="220" y="160" width="80" height="80" fill="#78716c"/>
+  <rect x="400" y="120" width="160" height="160" fill="#16a34a"/>
+  <rect x="430" y="150" width="40" height="40" fill="#0f172a"/>
+  <rect x="490" y="150" width="40" height="40" fill="#0f172a"/>
+  <rect x="450" y="210" width="60" height="30" fill="#0f172a"/>
+</svg>

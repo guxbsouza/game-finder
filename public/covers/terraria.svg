@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Terraria">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#082f49"/>
+      <stop offset="55%" stop-color="#14532d"/>
+      <stop offset="100%" stop-color="#431407"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#sky)"/>
+  <rect x="0" y="160" width="640" height="24" fill="#4ade80"/>
+  <rect x="80" y="200" width="40" height="160" fill="#a16207"/>
+  <rect x="200" y="230" width="48" height="130" fill="#854d0e"/>
+  <circle cx="520" cy="70" r="28" fill="#e2e8f0"/>
+</svg>

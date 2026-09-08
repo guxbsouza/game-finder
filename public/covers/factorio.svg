@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Factorio">
+  <rect width="640" height="360" fill="#1c1917"/>
+  <rect x="60" y="120" width="160" height="80" fill="#a16207"/>
+  <rect x="250" y="140" width="180" height="24" fill="#78716c"/>
+  <rect x="450" y="100" width="120" height="140" fill="#44403c"/>
+  <circle cx="510" cy="170" r="28" fill="#f59e0b"/>
+  <rect x="60" y="230" width="520" height="16" fill="#57534e"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Don't Starve Together">
+  <rect width="640" height="360" fill="#1c1917"/>
+  <circle cx="320" cy="170" r="70" fill="#44403c"/>
+  <circle cx="300" cy="160" r="10" fill="#facc15"/>
+  <circle cx="348" cy="160" r="10" fill="#facc15"/>
+  <rect x="292" y="200" width="56" height="8" fill="#e7e5e4"/>
+  <rect x="120" y="260" width="400" height="12" fill="#292524"/>
+</svg>
