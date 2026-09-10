@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { getRawgGames } from "@/lib/rawg";
+import { mapRawgGames } from "@/lib/rawg-mapper";
 
 export async function GET() {
   try {
-    const games = await getRawgGames();
+    const data = await getRawgGames();
+    const games = mapRawgGames(data.results);
 
-    return NextResponse.json(games);
+    return NextResponse.json({ count: data.count, games });
   } catch (error) {
     console.error("Erro ao consultar a RAWG:", error);
 
