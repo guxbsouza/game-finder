@@ -152,7 +152,6 @@ export function GameCatalog() {
         filterGames(games, {
           ...filters,
           search: "",
-          platforms: [],
         }),
         filters.search,
       ),

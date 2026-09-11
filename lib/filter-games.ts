@@ -16,11 +16,16 @@ export function filterGames(games: Game[], filters: GameFilters): Game[] {
       return false;
     }
 
-    if (
-      filters.platforms.length > 0 &&
-      !filters.platforms.some((platform) => game.platforms.includes(platform))
-    ) {
-      return false;
+    if (filters.platforms.length > 0) {
+      const matchesPlatform = filters.platforms.some((platform) =>
+        platform === "Mac"
+          ? game.platformAvailability?.Mac === "verified"
+          : game.platforms.includes(platform),
+      );
+
+      if (!matchesPlatform) {
+        return false;
+      }
     }
 
     if (

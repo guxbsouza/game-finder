@@ -8,17 +8,37 @@ const PLATFORM_LABELS: Record<Platform, string> = {
   Linux: "🐧 Linux",
 };
 
+function canUseNextImage(source: string): boolean {
+  if (!source) {
+    return false;
+  }
+
+  try {
+    const url = new URL(source);
+
+    return url.protocol === "https:" && url.hostname === "media.rawg.io";
+  } catch {
+    return source.startsWith("/");
+  }
+}
+
 export function GameCard({ game }: { game: Game }) {
   return (
     <article className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900/90 transition hover:border-emerald-400/30">
       <div className="relative aspect-[16/9] bg-zinc-800">
-        <Image
-          src={game.image}
-          alt={`Capa de ${game.name}`}
-          fill
-          className="object-cover"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
+        {canUseNextImage(game.image) ? (
+          <Image
+            src={game.image}
+            alt={`Capa de ${game.name}`}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm text-zinc-500">
+            Imagem indisponível
+          </div>
+        )}
       </div>
       <div className="flex flex-col gap-2.5 p-3.5">
         <h2 className="text-base font-semibold leading-snug tracking-tight text-zinc-50">
@@ -39,9 +59,15 @@ export function GameCard({ game }: { game: Game }) {
         <p className="text-sm text-zinc-300">👥 {formatPlayerCount(game)}</p>
 
         <ul className="space-y-0.5 text-sm text-zinc-300">
-          {game.platforms.map((platform) => (
+          {game.platforms
+            .filter(
+              (platform) =>
+                platform !== "Mac" ||
+                game.platformAvailability?.Mac === "verified",
+            )
+            .map((platform) => (
             <li key={platform}>{PLATFORM_LABELS[platform]}</li>
-          ))}
+            ))}
         </ul>
 
         <ul className="space-y-0.5 text-sm">

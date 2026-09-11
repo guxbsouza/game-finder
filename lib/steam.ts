@@ -1,15 +1,17 @@
 import type { Platform, PlatformStatus } from "./types";
+import { getRawgGameStores } from "./rawg";
 
 export type PlatformAvailability = Partial<Record<Platform, PlatformStatus>>;
 
 const STEAM_CACHE_TTL_MS = 1000 * 60 * 60;
 const steamStatusCache = new Map<string, { expiresAt: number; status: PlatformStatus }>();
+const rawgAppIdCache = new Map<string, { expiresAt: number; appId: string | null }>();
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function parseSteamAppIdFromGame(value: unknown): string | null {
+function getCanonicalSteamAppId(value: unknown): string | null {
   if (!isObject(value)) {
     return null;
   }
@@ -31,17 +33,21 @@ function parseSteamAppIdFromGame(value: unknown): string | null {
       continue;
     }
 
-    const slug = typeof storeEntry.store === "object" && storeEntry.store !== null
-      ? String((storeEntry.store as Record<string, unknown>).slug ?? "")
-      : "";
-
     const url = typeof storeEntry.url === "string" ? storeEntry.url : "";
 
-    if (!/steam/i.test(slug) && !/steampowered/i.test(url)) {
+    let parsedUrl: URL;
+
+    try {
+      parsedUrl = new URL(url);
+    } catch {
       continue;
     }
 
-    const match = url.match(/\/app\/(\d+)/i) ?? url.match(/app\/(\d+)/i);
+    if (parsedUrl.hostname.toLowerCase() !== "store.steampowered.com") {
+      continue;
+    }
+
+    const match = parsedUrl.pathname.match(/^\/app\/(\d+)(?:\/|$)/i);
 
     if (match?.[1]) {
       return match[1];
@@ -49,6 +55,72 @@ function parseSteamAppIdFromGame(value: unknown): string | null {
   }
 
   return null;
+}
+
+function getRawgGameId(value: unknown): string | null {
+  if (!isObject(value)) {
+    return null;
+  }
+
+  const id = value.id;
+  return typeof id === "number" && Number.isFinite(id)
+    ? String(id)
+    : typeof id === "string" && id.trim()
+      ? id.trim()
+      : null;
+}
+
+function getSteamStoreAppId(value: unknown): string | null {
+  if (!isObject(value)) {
+    return null;
+  }
+
+  const storeId = value.store_id;
+  const store = isObject(value.store) ? value.store : null;
+  const slug = typeof store?.slug === "string" ? store.slug.toLowerCase() : "";
+
+  if (storeId !== 1 && slug !== "steam") {
+    return null;
+  }
+
+  return getCanonicalSteamAppId({ stores: [value] });
+}
+
+export async function getSteamAppIdFromGame(value: unknown): Promise<string | null> {
+  const directAppId = getCanonicalSteamAppId(value);
+
+  if (directAppId) {
+    return directAppId;
+  }
+
+  const rawgGameId = getRawgGameId(value);
+
+  if (!rawgGameId) {
+    return null;
+  }
+
+  const now = Date.now();
+  const cacheEntry = rawgAppIdCache.get(rawgGameId);
+
+  if (cacheEntry && cacheEntry.expiresAt > now) {
+    return cacheEntry.appId;
+  }
+
+  let appId: string | null = null;
+
+  try {
+    const stores = await getRawgGameStores(rawgGameId);
+    appId = stores.map(getSteamStoreAppId).find(Boolean) ?? null;
+  } catch {
+    appId = null;
+  }
+
+  rawgAppIdCache.set(rawgGameId, {
+    expiresAt: now + STEAM_CACHE_TTL_MS,
+    appId,
+  });
+
+  return appId;
 }
 
 async function fetchSteamMacStatus(appId: string): Promise<PlatformStatus> {
@@ -106,14 +178,17 @@ async function fetchSteamMacStatus(appId: string): Promise<PlatformStatus> {
 
 export async function getSteamPlatformAvailability(
   rawgGame: unknown,
+  appId?: string | null,
 ): Promise<PlatformAvailability> {
-  const appId = parseSteamAppIdFromGame(rawgGame);
+  const resolvedAppId = appId === undefined
+    ? await getSteamAppIdFromGame(rawgGame)
+    : appId;
 
-  if (!appId) {
+  if (!resolvedAppId) {
     return { Mac: "unknown" };
   }
 
   return {
-    Mac: await fetchSteamMacStatus(appId),
+    Mac: await fetchSteamMacStatus(resolvedAppId),
   };
 }

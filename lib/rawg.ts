@@ -12,14 +12,37 @@ type RawgGamesResponse = {
   count: number;
 };
 
-export async function getRawgGames(query: RawgGamesQuery = {}) {
+type RawgGameStoresResponse = {
+  results: unknown[];
+};
+
+async function fetchRawg<T>(path: string): Promise<T> {
   const apiKey = process.env.RAWG_API_KEY;
 
   if (!apiKey) {
     throw new Error("RAWG_API_KEY não configurada.");
   }
 
+  const url = new URL(`${RAWG_API_URL}${path}`);
+  url.searchParams.set("key", apiKey);
+
+  const response = await fetch(url.toString(), { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(`RAWG API retornou status ${response.status}.`);
+  }
+
+  return (await response.json()) as T;
+}
+
+export async function getRawgGames(query: RawgGamesQuery = {}) {
   const url = new URL(`${RAWG_API_URL}/games`);
+  const apiKey = process.env.RAWG_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("RAWG_API_KEY não configurada.");
+  }
+
   url.searchParams.set("key", apiKey);
 
   const pageNumber = Math.max(Number(query.page ?? 1), 1);
@@ -45,15 +68,12 @@ export async function getRawgGames(query: RawgGamesQuery = {}) {
     }
   }
 
-  const response = await fetch(url.toString(), {
-    cache: "no-store",
-  });
+  return fetchRawg<RawgGamesResponse>(
+    url.pathname.replace(/^\/api/, "") + url.search,
+  );
+}
 
-  if (!response.ok) {
-    throw new Error(`RAWG API retornou status ${response.status}.`);
-  }
-
-  const data = (await response.json()) as RawgGamesResponse;
-
-  return data;
+export async function getRawgGameStores(gameId: string): Promise<unknown[]> {
+  const data = await fetchRawg<RawgGameStoresResponse>(`/games/${encodeURIComponent(gameId)}/stores`);
+  return Array.isArray(data.results) ? data.results : [];
 }

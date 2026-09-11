@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRawgGames } from "@/lib/rawg";
 import { mapRawgGames } from "@/lib/rawg-mapper";
-import { getSteamPlatformAvailability } from "@/lib/steam";
+import { getSteamAppIdFromGame, getSteamPlatformAvailability } from "@/lib/steam";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 
 const SEARCH_CANDIDATE_PAGE_SIZE = 40;
@@ -10,12 +10,28 @@ function parsePlatforms(searchParams: URLSearchParams): string[] | undefined {
   const repeated = searchParams.getAll("platforms");
   const csv = searchParams.get("platforms");
 
-  const values = [...repeated, ...(csv ? csv.split(",") : [])]
+  const values = [...repeated, ...(repeated.length === 0 && csv ? csv.split(",") : [])]
     .flatMap((value) => value.split(","))
     .map((value) => value.trim())
     .filter(Boolean);
 
-  return values.length > 0 ? values : undefined;
+  const uniqueValues = [...new Set(values)];
+
+  return uniqueValues.length > 0 ? uniqueValues : undefined;
+}
+
+function getRawgGameId(value: unknown): string | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const id = (value as { id?: unknown }).id;
+
+  return typeof id === "number" && Number.isFinite(id)
+    ? String(id)
+    : typeof id === "string" && id.trim()
+      ? id.trim()
+      : null;
 }
 
 export async function GET(request: Request) {
@@ -34,44 +50,55 @@ export async function GET(request: Request) {
         ? pageSize
         : 20;
 
+    const macFilterActive = platforms?.includes("5") ?? false;
+    const rawgPlatforms = macFilterActive ? undefined : platforms;
+
     const data = await getRawgGames({
       search,
-      platforms,
+      platforms: rawgPlatforms,
       page: rawgPage,
       pageSize: rawgPageSize,
     });
 
     const rawGames = data.results;
     const mappedGames = mapRawgGames(rawGames);
-    const rankedGames = search ? sortBySearchRelevance(mappedGames, search) : mappedGames;
 
-    const totalCount = search
-      ? Math.min(data.count ?? rankedGames.length, rankedGames.length)
-      : data.count ?? rankedGames.length;
+    const steamResults = await Promise.all(
+      rawGames.map(async (rawGame) => {
+        const appId = await getSteamAppIdFromGame(rawGame);
 
-    const startIndex = (Math.max(page, 1) - 1) * pageSize;
-    const pageGames = rankedGames.slice(startIndex, startIndex + pageSize);
-
-    const steamAvailabilityEntries = await Promise.all(
-      rawGames.map((rawGame) => getSteamPlatformAvailability(rawGame)),
+        return {
+          rawgGameId: getRawgGameId(rawGame),
+          appId,
+          availability: await getSteamPlatformAvailability(rawGame, appId),
+        };
+      }),
     );
 
-    const steamAvailabilityByGameId = new Map<string, (typeof steamAvailabilityEntries)[number]>();
+    const steamAvailabilityByAppId = new Map<
+      string,
+      (typeof steamResults)[number]["availability"]
+    >();
 
-    mappedGames.forEach((game, index) => {
-      const availability = steamAvailabilityEntries[index];
-
-      if (availability) {
-        steamAvailabilityByGameId.set(game.id, availability);
+    steamResults.forEach(({ appId, availability }) => {
+      if (appId) {
+        steamAvailabilityByAppId.set(appId, availability);
       }
     });
 
-    pageGames.forEach((game) => {
-      const macStatus = steamAvailabilityByGameId.get(game.id)?.Mac;
+    const steamAppIdByGameId = new Map<string, string | null>();
 
-      if (!macStatus) {
-        return;
+    steamResults.forEach(({ rawgGameId, appId }) => {
+      if (rawgGameId) {
+        steamAppIdByGameId.set(rawgGameId, appId);
       }
+    });
+
+    mappedGames.forEach((game) => {
+      const appId = steamAppIdByGameId.get(game.id);
+      const macStatus = appId
+        ? steamAvailabilityByAppId.get(appId)?.Mac ?? "unknown"
+        : "unknown";
 
       game.platformAvailability = {
         ...(game.platformAvailability ?? {}),
@@ -79,7 +106,19 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json({ count: totalCount, games: pageGames });
+    const rankedGames = search ? sortBySearchRelevance(mappedGames, search) : mappedGames;
+    const macOnlyFilter = macFilterActive && platforms?.length === 1;
+    const filteredGames = macOnlyFilter
+      ? rankedGames.filter((game) => game.platformAvailability?.Mac === "verified")
+      : rankedGames;
+
+    const totalCount = macOnlyFilter
+      ? filteredGames.length
+      : search
+        ? Math.min(data.count ?? filteredGames.length, filteredGames.length)
+        : data.count ?? filteredGames.length;
+
+    return NextResponse.json({ count: totalCount, games: filteredGames });
   } catch (error) {
     console.error("Erro ao consultar a RAWG:", error);
 
