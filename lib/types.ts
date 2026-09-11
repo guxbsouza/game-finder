@@ -13,6 +13,7 @@ export type Platform = (typeof PLATFORMS)[number];
 export type PlayerCount = (typeof PLAYER_COUNTS)[number];
 export type MultiplayerType = (typeof MULTIPLAYER_TYPES)[number];
 export type Genre = (typeof GENRES)[number];
+export type PlatformStatus = "verified" | "unavailable" | "unknown";
 
 export type Game = {
   id: string;
@@ -24,6 +25,7 @@ export type Game = {
   maxPlayers: number;
   coopOnline: boolean;
   coopLocal: boolean;
+  platformAvailability?: Partial<Record<Platform, PlatformStatus>>;
 };
 
 export type GameFilters = {
