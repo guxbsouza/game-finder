@@ -1,29 +1,35 @@
 import { NextResponse } from "next/server";
 import { getRawgGames } from "@/lib/rawg";
-import { mapRawgGames } from "@/lib/rawg-mapper";
+import { mapRawgGame } from "@/lib/rawg-mapper";
 import { getSteamAppIdFromGame, getSteamPlatformAvailability } from "@/lib/steam";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { filterGames } from "@/lib/filter-games";
-import type { GameFilters, Genre, MultiplayerType, Platform } from "@/lib/types";
+import type { Game, GameFilters, Genre, MultiplayerType, Platform } from "@/lib/types";
 
 const SEARCH_CANDIDATE_PAGE_SIZE = 40;
 const MAC_MAX_RAWG_PAGES = 5;
 const MAC_RAWG_PAGE_SIZE = 40;
 const STEAM_CONCURRENCY = 5;
 
-async function mapWithConcurrency<T, R>(
+async function mapIncrementally<T, R>(
   values: T[],
   limit: number,
   mapper: (value: T) => Promise<R>,
+  shouldStop: (results: R[]) => boolean,
 ): Promise<R[]> {
   const results: R[] = [];
   let nextIndex = 0;
+  let stopped = false;
 
   async function worker() {
-    while (nextIndex < values.length) {
+    while (!stopped && nextIndex < values.length) {
       const index = nextIndex;
       nextIndex += 1;
       results[index] = await mapper(values[index]);
+
+      if (shouldStop(results)) {
+        stopped = true;
+      }
     }
   }
 
@@ -118,15 +124,20 @@ export async function GET(request: Request) {
         : 20;
 
     const rawGamesById = new Map<string, unknown>();
-    const steamResultsByRawgId = new Map<
-      string,
-      {
-        appId: string | null;
-        availability: Awaited<ReturnType<typeof getSteamPlatformAvailability>>;
-      }
-    >();
     const discoveryTags = farmingFilterActive ? ["agriculture", "farming"] : [undefined];
     let data: Awaited<ReturnType<typeof getRawgGames>> | null = null;
+    const matchedGames: Game[] = [];
+    const requiredGameCount = normalizedPage * pageSize;
+    const canStopEarly = shouldBuildFilteredCatalog && !search;
+    let stoppedEarly = false;
+
+    const serverFilters: GameFilters = {
+      search: search ?? "",
+      platforms: mapPlatformFilters(platforms),
+      playerCounts: [],
+      multiplayer,
+      genres,
+    };
 
     for (const discoveryTag of discoveryTags) {
       for (let candidatePage = rawgPage; ; candidatePage += 1) {
@@ -153,28 +164,39 @@ export async function GET(request: Request) {
           }
         }
 
-        const newSteamResults = await mapWithConcurrency(
+        const newMatchedGames = await mapIncrementally(
           newRawGames,
           STEAM_CONCURRENCY,
           async (rawGame) => {
-            const rawgGameId = getRawgGameId(rawGame);
             const appId = await getSteamAppIdFromGame(rawGame);
+            const availability = await getSteamPlatformAvailability(rawGame, appId);
+            const game = mapRawgGame(rawGame);
 
-            return rawgGameId
-              ? {
-                  rawgGameId,
-                  appId,
-                  availability: await getSteamPlatformAvailability(rawGame, appId),
-                }
-              : null;
-            },
+            if (!game) {
+              return null;
+            }
+
+            game.platformAvailability = {
+              ...(game.platformAvailability ?? {}),
+              Mac: appId ? availability.Mac ?? "unknown" : "unknown",
+            };
+
+            return filterGames([game], serverFilters)[0] ?? null;
+          },
+          (results) =>
+            canStopEarly &&
+            matchedGames.length + results.filter((game): game is Game => Boolean(game)).length >=
+              requiredGameCount,
         );
 
-        newSteamResults.forEach((result) => {
-          if (result) {
-            steamResultsByRawgId.set(result.rawgGameId, result);
-          }
-        });
+        matchedGames.push(
+          ...newMatchedGames.filter((game): game is Game => Boolean(game)),
+        );
+
+        if (canStopEarly && matchedGames.length >= requiredGameCount) {
+          stoppedEarly = true;
+          break;
+        }
 
         if (!shouldBuildFilteredCatalog ||
           pageData.results.length < MAC_RAWG_PAGE_SIZE ||
@@ -182,54 +204,19 @@ export async function GET(request: Request) {
           break;
         }
       }
+
+      if (stoppedEarly) {
+        break;
+      }
     }
 
     if (!data) {
       throw new Error("RAWG não retornou dados de jogos.");
     }
 
-    const rawGames = [...rawGamesById.values()];
-    const mappedGames = mapRawgGames(rawGames);
-
-    const steamAvailabilityByAppId = new Map<
-      string,
-      Awaited<ReturnType<typeof getSteamPlatformAvailability>>
-    >();
-
-    steamResultsByRawgId.forEach(({ appId, availability }) => {
-      if (appId) {
-        steamAvailabilityByAppId.set(appId, availability);
-      }
-    });
-
-    const steamAppIdByGameId = new Map<string, string | null>();
-
-    steamResultsByRawgId.forEach(({ appId }, rawgGameId) => {
-      steamAppIdByGameId.set(rawgGameId, appId);
-    });
-
-    mappedGames.forEach((game) => {
-      const appId = steamAppIdByGameId.get(game.id);
-      const macStatus = appId
-        ? steamAvailabilityByAppId.get(appId)?.Mac ?? "unknown"
-        : "unknown";
-
-      game.platformAvailability = {
-        ...(game.platformAvailability ?? {}),
-        Mac: macStatus,
-      };
-    });
-
-    const serverFilters: GameFilters = {
-      search: search ?? "",
-      platforms: mapPlatformFilters(platforms),
-      playerCounts: [],
-      multiplayer,
-      genres,
-    };
     const filteredGames = shouldBuildFilteredCatalog
-      ? filterGames(mappedGames, serverFilters)
-      : mappedGames;
+      ? matchedGames
+      : matchedGames;
     const rankedGames = search
       ? sortBySearchRelevance(filteredGames, search)
       : filteredGames;
@@ -241,7 +228,9 @@ export async function GET(request: Request) {
       : rankedGames;
 
     const totalCount = shouldBuildFilteredCatalog
-      ? rankedGames.length
+      ? stoppedEarly
+        ? Math.max(rankedGames.length, requiredGameCount + 1)
+        : rankedGames.length
       : search
         ? Math.min(data.count ?? pageGames.length, pageGames.length)
         : data.count ?? pageGames.length;

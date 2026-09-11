@@ -9,6 +9,7 @@ const STEAM_MAX_RETRIES = 2;
 const steamStatusCache = new Map<string, { expiresAt: number; status: PlatformStatus }>();
 const steamTransientCooldown = new Map<string, number>();
 const rawgAppIdCache = new Map<string, { expiresAt: number; appId: string | null }>();
+const steamStatusInFlight = new Map<string, Promise<PlatformStatus>>();
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -126,20 +127,7 @@ export async function getSteamAppIdFromGame(value: unknown): Promise<string | nu
   return appId;
 }
 
-async function fetchSteamMacStatus(appId: string): Promise<PlatformStatus> {
-  const cacheEntry = steamStatusCache.get(appId);
-  const now = Date.now();
-
-  if (cacheEntry && cacheEntry.expiresAt > now) {
-    return cacheEntry.status;
-  }
-
-  const cooldownExpiresAt = steamTransientCooldown.get(appId);
-
-  if (cooldownExpiresAt && cooldownExpiresAt > now) {
-    return "unknown";
-  }
-
+async function fetchSteamMacStatusUncached(appId: string): Promise<PlatformStatus> {
   for (let attempt = 0; attempt <= STEAM_MAX_RETRIES; attempt += 1) {
     try {
       const response = await fetch(
@@ -192,6 +180,37 @@ async function fetchSteamMacStatus(appId: string): Promise<PlatformStatus> {
   }
 
   return "unknown";
+}
+
+function fetchSteamMacStatus(appId: string): Promise<PlatformStatus> {
+  const cacheEntry = steamStatusCache.get(appId);
+  const now = Date.now();
+
+  if (cacheEntry && cacheEntry.expiresAt > now) {
+    return Promise.resolve(cacheEntry.status);
+  }
+
+  const cooldownExpiresAt = steamTransientCooldown.get(appId);
+
+  if (cooldownExpiresAt && cooldownExpiresAt > now) {
+    return Promise.resolve("unknown");
+  }
+
+  const inFlight = steamStatusInFlight.get(appId);
+
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const request = fetchSteamMacStatusUncached(appId);
+  steamStatusInFlight.set(appId, request);
+
+  void request.then(
+    () => steamStatusInFlight.delete(appId),
+    () => steamStatusInFlight.delete(appId),
+  );
+
+  return request;
 }
 
 export async function getSteamPlatformAvailability(
