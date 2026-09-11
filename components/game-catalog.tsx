@@ -40,6 +40,14 @@ function buildApiUrl(filters: GameFilters, page: number): string {
     );
   }
 
+  if (filters.multiplayer.length > 0) {
+    params.set("multiplayer", filters.multiplayer.join(","));
+  }
+
+  if (filters.genres.length > 0) {
+    params.set("genres", filters.genres.join(","));
+  }
+
   params.set("page", String(page));
   params.set("page_size", String(hasSearch ? RAWG_CANDIDATE_PAGE_SIZE : PAGE_SIZE));
 
@@ -109,7 +117,16 @@ export function GameCatalog() {
       void (async () => {
         try {
           const response = await fetch(
-            buildApiUrl({ ...filters, search: trimmedQuery, platforms: [] }, 1),
+            buildApiUrl(
+              {
+                ...filters,
+                search: trimmedQuery,
+                platforms: [],
+                multiplayer: [],
+                genres: [],
+              },
+              1,
+            ),
             {
               method: "GET",
               cache: "no-store",

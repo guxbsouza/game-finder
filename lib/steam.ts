@@ -4,7 +4,10 @@ import { getRawgGameStores } from "./rawg";
 export type PlatformAvailability = Partial<Record<Platform, PlatformStatus>>;
 
 const STEAM_CACHE_TTL_MS = 1000 * 60 * 60;
+const STEAM_TRANSIENT_COOLDOWN_MS = 1000 * 10;
+const STEAM_MAX_RETRIES = 2;
 const steamStatusCache = new Map<string, { expiresAt: number; status: PlatformStatus }>();
+const steamTransientCooldown = new Map<string, number>();
 const rawgAppIdCache = new Map<string, { expiresAt: number; appId: string | null }>();
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -131,49 +134,64 @@ async function fetchSteamMacStatus(appId: string): Promise<PlatformStatus> {
     return cacheEntry.status;
   }
 
-  try {
-    const response = await fetch(
-      `https://store.steampowered.com/api/appdetails?appids=${appId}`,
-      {
-        cache: "no-store",
-      },
-    );
+  const cooldownExpiresAt = steamTransientCooldown.get(appId);
 
-    if (!response.ok) {
-      const status: PlatformStatus = "unknown";
-      steamStatusCache.set(appId, { expiresAt: now + STEAM_CACHE_TTL_MS, status });
-      return status;
-    }
-
-    const payload = (await response.json()) as Record<
-      string,
-      { success?: boolean; data?: { platforms?: { mac?: boolean } } }
-    >;
-
-    const appData = payload[appId];
-    const macPlatform = appData?.data?.platforms?.mac;
-    const status: PlatformStatus =
-      typeof macPlatform === "boolean"
-        ? macPlatform
-          ? "verified"
-          : "unavailable"
-        : "unknown";
-
-    steamStatusCache.set(appId, {
-      expiresAt: Date.now() + STEAM_CACHE_TTL_MS,
-      status,
-    });
-
-    return status;
-  } catch {
-    const status: PlatformStatus = "unknown";
-    steamStatusCache.set(appId, {
-      expiresAt: Date.now() + STEAM_CACHE_TTL_MS,
-      status,
-    });
-
-    return status;
+  if (cooldownExpiresAt && cooldownExpiresAt > now) {
+    return "unknown";
   }
+
+  for (let attempt = 0; attempt <= STEAM_MAX_RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(
+        `https://store.steampowered.com/api/appdetails?appids=${appId}`,
+        {
+          cache: "no-store",
+        },
+      );
+
+      if (response.status === 429) {
+        if (attempt < STEAM_MAX_RETRIES) {
+          await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
+          continue;
+        }
+
+        steamTransientCooldown.set(appId, Date.now() + STEAM_TRANSIENT_COOLDOWN_MS);
+        return "unknown";
+      }
+
+      if (!response.ok) {
+        return "unknown";
+      }
+
+      const payload = (await response.json()) as Record<
+        string,
+        { success?: boolean; data?: { platforms?: { mac?: boolean } } }
+      >;
+
+      const appData = payload[appId];
+      const macPlatform = appData?.data?.platforms?.mac;
+      const status: PlatformStatus =
+        typeof macPlatform === "boolean"
+          ? macPlatform
+            ? "verified"
+            : "unavailable"
+          : "unknown";
+
+      if (status !== "unknown") {
+        steamStatusCache.set(appId, {
+          expiresAt: Date.now() + STEAM_CACHE_TTL_MS,
+          status,
+        });
+      }
+
+      steamTransientCooldown.delete(appId);
+      return status;
+    } catch {
+      return "unknown";
+    }
+  }
+
+  return "unknown";
 }
 
 export async function getSteamPlatformAvailability(

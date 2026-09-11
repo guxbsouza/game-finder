@@ -2,6 +2,7 @@ const RAWG_API_URL = "https://api.rawg.io/api";
 
 export type RawgGamesQuery = {
   search?: string;
+  tags?: string[];
   platforms?: string[];
   page?: number;
   pageSize?: number;
@@ -55,6 +56,17 @@ export async function getRawgGames(query: RawgGamesQuery = {}) {
     const cleanedSearch = query.search.trim();
     url.searchParams.set("search", cleanedSearch);
     url.searchParams.set("search_precise", "true");
+  }
+
+  if (query.tags && query.tags.length > 0) {
+    const normalizedTags = query.tags
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .join(",");
+
+    if (normalizedTags) {
+      url.searchParams.set("tags", normalizedTags);
+    }
   }
 
   if (query.platforms && query.platforms.length > 0) {

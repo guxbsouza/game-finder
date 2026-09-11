@@ -20,6 +20,7 @@ export type Game = {
   name: string;
   image: string;
   genres: Genre[];
+  tags?: string[];
   platforms: Platform[];
   minPlayers: number;
   maxPlayers: number;

@@ -96,6 +96,14 @@ function mapMultiplayer(rawgGame: RawgGame): Pick<Game, "coopOnline" | "coopLoca
   };
 }
 
+function mapTags(rawgGame: RawgGame): string[] {
+  return [...new Set(
+    (rawgGame.tags ?? [])
+      .map((tag) => normalize(tag.name ?? ""))
+      .filter(Boolean),
+  )];
+}
+
 export function mapRawgGame(value: unknown): Game | null {
   if (!isRawgGame(value)) {
     return null;
@@ -108,6 +116,7 @@ export function mapRawgGame(value: unknown): Game | null {
     name: value.name,
     image: value.background_image ?? "",
     genres: mapGenres(value),
+    tags: mapTags(value),
     platforms: mapPlatforms(value),
     // RAWG does not expose structured player-count fields for this mapper.
     minPlayers: 1,

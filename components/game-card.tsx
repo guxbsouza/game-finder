@@ -23,6 +23,11 @@ function canUseNextImage(source: string): boolean {
 }
 
 export function GameCard({ game }: { game: Game }) {
+  const displayPlatforms: Platform[] = [
+    ...(game.platformAvailability?.Mac === "verified" ? ["Mac" as const] : []),
+    ...game.platforms.filter((platform) => platform !== "Mac"),
+  ];
+
   return (
     <article className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900/90 transition hover:border-emerald-400/30">
       <div className="relative aspect-[16/9] bg-zinc-800">
@@ -59,15 +64,9 @@ export function GameCard({ game }: { game: Game }) {
         <p className="text-sm text-zinc-300">👥 {formatPlayerCount(game)}</p>
 
         <ul className="space-y-0.5 text-sm text-zinc-300">
-          {game.platforms
-            .filter(
-              (platform) =>
-                platform !== "Mac" ||
-                game.platformAvailability?.Mac === "verified",
-            )
-            .map((platform) => (
+          {displayPlatforms.map((platform) => (
             <li key={platform}>{PLATFORM_LABELS[platform]}</li>
-            ))}
+          ))}
         </ul>
 
         <ul className="space-y-0.5 text-sm">

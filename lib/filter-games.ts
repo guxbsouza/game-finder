@@ -8,6 +8,16 @@ function supportsAtLeast(game: Game, count: PlayerCount): boolean {
   return game.maxPlayers >= minimumPlayersRequired(count);
 }
 
+function matchesGenre(game: Game, genre: GameFilters["genres"][number]): boolean {
+  if (genre === "Farming") {
+    return (game.tags ?? []).some(
+      (tag) => tag === "agriculture" || tag === "farming",
+    );
+  }
+
+  return game.genres.includes(genre);
+}
+
 export function filterGames(games: Game[], filters: GameFilters): Game[] {
   const query = filters.search.trim().toLowerCase();
 
@@ -48,7 +58,7 @@ export function filterGames(games: Game[], filters: GameFilters): Game[] {
 
     if (
       filters.genres.length > 0 &&
-      !filters.genres.some((genre) => game.genres.includes(genre))
+      !filters.genres.some((genre) => matchesGenre(game, genre))
     ) {
       return false;
     }
