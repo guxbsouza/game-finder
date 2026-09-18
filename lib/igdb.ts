@@ -266,14 +266,91 @@ export async function getIgdbPlatformsByIds(platformIds: number[]): Promise<Igdb
   );
 }
 
+type IgdbExpandedPlatform = {
+  id: number;
+  name?: string;
+  abbreviation?: string;
+};
+
+type IgdbExpandedMultiplayerMode = {
+  id: number;
+  platform?: number;
+  onlinecoop?: boolean;
+  onlinecoopmax?: number;
+  onlinemax?: number;
+  offlinecoop?: boolean;
+  offlinecoopmax?: number;
+  offlinemax?: number;
+  lancoop?: boolean;
+  splitscreen?: boolean;
+  splitscreenonline?: boolean;
+  campaigncoop?: boolean;
+  dropin?: boolean;
+};
+
+type IgdbExpandedGame = {
+  id: number;
+  name?: string;
+  platforms?: IgdbExpandedPlatform[];
+  multiplayer_modes?: IgdbExpandedMultiplayerMode[];
+};
+
+type IgdbExpandedExternalGame = {
+  id: number;
+  uid?: string;
+  name?: string;
+  platform?: number;
+  external_game_source?: number;
+  game_release_format?: number;
+  updated_at?: number;
+  game?: IgdbExpandedGame;
+};
+
+const EXPANDED_EXTERNAL_GAME_FIELDS =
+  "id,uid,name,platform,external_game_source,game_release_format,updated_at," +
+  "game.id,game.name," +
+  "game.platforms.id,game.platforms.name,game.platforms.abbreviation," +
+  "game.multiplayer_modes.id,game.multiplayer_modes.platform," +
+  "game.multiplayer_modes.onlinecoop,game.multiplayer_modes.onlinecoopmax,game.multiplayer_modes.onlinemax," +
+  "game.multiplayer_modes.offlinecoop,game.multiplayer_modes.offlinecoopmax,game.multiplayer_modes.offlinemax," +
+  "game.multiplayer_modes.lancoop,game.multiplayer_modes.splitscreen,game.multiplayer_modes.splitscreenonline," +
+  "game.multiplayer_modes.campaigncoop,game.multiplayer_modes.dropin";
+
 export async function lookupSteamAppMultiplayer(
   steamAppId: string | number,
 ): Promise<IgdbSteamMultiplayerLookup> {
   const normalizedSteamAppId = normalizeSteamAppId(steamAppId);
-  const externalGames = await getIgdbExternalGamesBySteamAppId(normalizedSteamAppId);
-  const igdbGameId = getSingleResolvedGameId(externalGames, normalizedSteamAppId);
+  const expandedExternalGames = await queryIgdb<IgdbExpandedExternalGame>(
+    "external_games",
+    `fields ${EXPANDED_EXTERNAL_GAME_FIELDS}; where uid = "${normalizedSteamAppId}" & external_game_source = ${STEAM_EXTERNAL_GAME_SOURCE};`,
+  );
 
-  if (!igdbGameId) {
+  const matchingExternalGames = expandedExternalGames.filter(
+    (externalGame) =>
+      externalGame.external_game_source === STEAM_EXTERNAL_GAME_SOURCE &&
+      externalGame.uid === normalizedSteamAppId,
+  );
+
+  const gameIds = [
+    ...new Set(
+      matchingExternalGames
+        .map((externalGame) => externalGame.game?.id)
+        .filter((id): id is number => typeof id === "number" && Number.isInteger(id) && id > 0),
+    ),
+  ];
+
+  const externalGames: IgdbExternalGame[] = matchingExternalGames.map((externalGame) => ({
+    id: externalGame.id,
+    uid: externalGame.uid,
+    name: externalGame.name,
+    game: externalGame.game?.id,
+    platform: externalGame.platform,
+    external_game_source: externalGame.external_game_source,
+    game_release_format: externalGame.game_release_format,
+    updated_at: externalGame.updated_at,
+  }));
+
+  if (gameIds.length !== 1) {
     return {
       steamAppId: normalizedSteamAppId,
       externalGames,
@@ -284,20 +361,105 @@ export async function lookupSteamAppMultiplayer(
     };
   }
 
-  const [game, multiplayerModes] = await Promise.all([
-    getIgdbGameById(igdbGameId),
-    getIgdbMultiplayerModesByGameId(igdbGameId),
-  ]);
-  const platforms = await getIgdbPlatformsByIds(
-    multiplayerModes.flatMap((mode) => mode.platform === undefined ? [] : [mode.platform]),
+  const igdbGameId = gameIds[0];
+  const matchedExternalGame = matchingExternalGames.find(
+    (externalGame) => externalGame.game?.id === igdbGameId,
   );
+  const matchedGame = matchedExternalGame?.game;
+
+  const validMultiplayerModes = (matchedGame?.multiplayer_modes ?? [])
+    .filter(
+      (mode): mode is IgdbMultiplayerMode & { platform: number } =>
+        typeof mode.platform === "number" && Number.isInteger(mode.platform) && mode.platform > 0,
+    )
+    .map((mode) => ({
+      ...mode,
+      game: igdbGameId,
+    }));
+
+  const platforms: IgdbPlatform[] = (matchedGame?.platforms ?? []).map((platform) => ({
+    id: platform.id,
+    name: platform.name,
+    abbreviation: platform.abbreviation,
+  }));
+
+  const game: IgdbGame = {
+    id: igdbGameId,
+    name: matchedGame?.name,
+    platforms: platforms.map((p) => p.id),
+    multiplayer_modes: (matchedGame?.multiplayer_modes ?? []).map((m) => m.id),
+  };
 
   return {
     steamAppId: normalizedSteamAppId,
     externalGames,
     igdbGameId,
     game,
-    multiplayerModes,
+    multiplayerModes: validMultiplayerModes,
     platforms,
+  };
+}
+
+export const IGDB_PLATFORM_MAC = 14;
+export const IGDB_PLATFORM_WINDOWS = 6;
+
+export type IgdbMultiplayerSummary = {
+  onlineMax: number | null;
+  localMax: number | null;
+  sourcePlatform: "mac" | "windows" | "none";
+  macMode: IgdbMultiplayerMode | null;
+  windowsMode: IgdbMultiplayerMode | null;
+};
+
+function findModeForPlatform(modes: IgdbMultiplayerMode[], platformId: number): IgdbMultiplayerMode | null {
+  return modes.find((m) => m.platform === platformId) ?? null;
+}
+
+function extractMaxFromMode(mode: IgdbMultiplayerMode | null): { onlineMax: number | null; localMax: number | null } {
+  if (!mode) return { onlineMax: null, localMax: null };
+
+  const onlineMax = mode.onlinecoop === true && typeof mode.onlinecoopmax === "number"
+    ? mode.onlinecoopmax
+    : null;
+  const localMax = mode.offlinecoop === true && typeof mode.offlinecoopmax === "number"
+    ? mode.offlinecoopmax
+    : null;
+
+  return { onlineMax, localMax };
+}
+
+export function summarizeIgdbMultiplayer(lookup: IgdbSteamMultiplayerLookup): IgdbMultiplayerSummary {
+  const macMode = findModeForPlatform(lookup.multiplayerModes, IGDB_PLATFORM_MAC);
+  const windowsMode = findModeForPlatform(lookup.multiplayerModes, IGDB_PLATFORM_WINDOWS);
+
+  const macMax = extractMaxFromMode(macMode);
+  const windowsMax = extractMaxFromMode(windowsMode);
+
+  if (macMode) {
+    return {
+      onlineMax: macMax.onlineMax,
+      localMax: macMax.localMax,
+      sourcePlatform: "mac",
+      macMode,
+      windowsMode,
+    };
+  }
+
+  if (windowsMode) {
+    return {
+      onlineMax: windowsMax.onlineMax,
+      localMax: windowsMax.localMax,
+      sourcePlatform: "windows",
+      macMode,
+      windowsMode,
+    };
+  }
+
+  return {
+    onlineMax: null,
+    localMax: null,
+    sourcePlatform: "none",
+    macMode: null,
+    windowsMode: null,
   };
 }
