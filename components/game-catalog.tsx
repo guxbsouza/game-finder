@@ -54,18 +54,6 @@ function buildApiUrl(filters: GameFilters, page: number): string {
   return `/api/games?${params.toString()}`;
 }
 
-async function fetchGames(filters: GameFilters, page: number): Promise<RawgPageResponse> {
-  const response = await fetch(buildApiUrl(filters, page), {
-    method: "GET",
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error("Não foi possível carregar os jogos.");
-  }
-
-  return (await response.json()) as RawgPageResponse;
-}
 
 export function GameCatalog() {
   const [games, setGames] = useState<Game[]>([]);
@@ -77,29 +65,67 @@ export function GameCatalog() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
 
   const totalPages = Math.max(Math.ceil(totalCount / PAGE_SIZE), 1);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const currentRequestId = ++requestIdRef.current;
+
     const loadGames = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const data = await fetchGames(filters, page);
+        const response = await fetch(buildApiUrl(filters, page), {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Não foi possível carregar os jogos.");
+        }
+
+        const data = (await response.json()) as RawgPageResponse;
+
+        // Ignore the response if a newer request was already dispatched.
+        if (currentRequestId !== requestIdRef.current) {
+          return;
+        }
+
         setGames(Array.isArray(data.games) ? data.games : []);
         setTotalCount(Number(data.count ?? 0));
       } catch (loadError) {
+        // An aborted fetch throws a DOMException with name "AbortError".
+        // Treat it as a no-op: the next request is responsible for updating state.
+        if (loadError instanceof Error && loadError.name === "AbortError") {
+          return;
+        }
+
+        // Only update error state if this is still the most recent request.
+        if (currentRequestId !== requestIdRef.current) {
+          return;
+        }
+
         console.error("Erro ao buscar jogos da API:", loadError);
         setError("Não foi possível carregar os jogos no momento.");
         setGames([]);
         setTotalCount(0);
       } finally {
-        setLoading(false);
+        // Only clear the loading indicator for the owning request.
+        if (currentRequestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
     };
 
     loadGames();
+
+    return () => {
+      controller.abort();
+    };
   }, [filters, page]);
 
   useEffect(() => {
@@ -112,6 +138,8 @@ export function GameCatalog() {
     if (!trimmedQuery) {
       return;
     }
+
+    const suggestionController = new AbortController();
 
     const timerId = setTimeout(() => {
       void (async () => {
@@ -130,6 +158,7 @@ export function GameCatalog() {
             {
               method: "GET",
               cache: "no-store",
+              signal: suggestionController.signal,
             },
           );
 
@@ -149,7 +178,15 @@ export function GameCatalog() {
 
           setSuggestions(nextSuggestions);
           setShowSuggestions(nextSuggestions.length > 0);
-        } catch {
+        } catch (suggestionError) {
+          // Silently ignore aborted fetches.
+          if (
+            suggestionError instanceof Error &&
+            suggestionError.name === "AbortError"
+          ) {
+            return;
+          }
+
           setSuggestions([]);
           setShowSuggestions(false);
         }
@@ -160,6 +197,7 @@ export function GameCatalog() {
 
     return () => {
       clearTimeout(timerId);
+      suggestionController.abort();
     };
   }, [filters]);
 
