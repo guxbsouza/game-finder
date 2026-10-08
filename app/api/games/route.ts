@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { getRawgGames } from "@/lib/rawg";
 import { mapRawgGame } from "@/lib/rawg-mapper";
 import { getSteamAppIdFromGame, getSteamPlatformAvailability } from "@/lib/steam";
+import { getSafeSteamAppMultiplayer, summarizeIgdbMultiplayer } from "@/lib/igdb";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { filterGames } from "@/lib/filter-games";
-import type { Game, GameFilters, Genre, MultiplayerType, Platform } from "@/lib/types";
+import type { Game, GameFilters, Genre, MultiplayerType, Platform, PlatformStatus, PlayerCount } from "@/lib/types";
 
 const SEARCH_CANDIDATE_PAGE_SIZE = 40;
 const MAC_MAX_RAWG_PAGES = 5;
@@ -99,6 +100,11 @@ export async function GET(request: Request) {
     const multiplayer = parseCsvParam(searchParams, "multiplayer").filter(
       (value): value is MultiplayerType => value === "online" || value === "local",
     );
+    const playerCounts = parseCsvParam(searchParams, "playerCounts")
+      .map((value) => (value === "5+" ? "5+" : Number(value)))
+      .filter((value): value is PlayerCount =>
+        [1, 2, 3, 4, "5+"].includes(value as PlayerCount),
+      );
     const genres = parseCsvParam(searchParams, "genres").filter(
       (value): value is Genre =>
         ["Farming", "RPG", "Survival", "Building", "Simulation"].includes(value),
@@ -109,10 +115,12 @@ export async function GET(request: Request) {
     const normalizedPage = Number.isFinite(page) ? Math.max(page, 1) : 1;
     const macFilterActive = platforms?.includes("5") ?? false;
     const farmingFilterActive = genres.includes("Farming");
+    const playerCountFilterActive = playerCounts.length > 0;
     const shouldBuildFilteredCatalog = Boolean(
       search ||
         platforms?.length ||
         multiplayer.length ||
+        playerCountFilterActive ||
         genres.length,
     );
     const rawgPlatforms = macFilterActive ? undefined : platforms;
@@ -134,7 +142,7 @@ export async function GET(request: Request) {
     const serverFilters: GameFilters = {
       search: search ?? "",
       platforms: mapPlatformFilters(platforms),
-      playerCounts: [],
+      playerCounts,
       multiplayer,
       genres,
     };
@@ -168,8 +176,19 @@ export async function GET(request: Request) {
           newRawGames,
           STEAM_CONCURRENCY,
           async (rawGame) => {
-            const appId = await getSteamAppIdFromGame(rawGame);
-            const availability = await getSteamPlatformAvailability(rawGame, appId);
+            let appId: string | null = null;
+            let macStatus: PlatformStatus = "unknown";
+
+            try {
+              appId = await getSteamAppIdFromGame(rawGame);
+              if (appId) {
+                const availability = await getSteamPlatformAvailability(rawGame, appId);
+                macStatus = availability.Mac ?? "unknown";
+              }
+            } catch {
+              macStatus = "unknown";
+            }
+
             const game = mapRawgGame(rawGame);
 
             if (!game) {
@@ -178,8 +197,19 @@ export async function GET(request: Request) {
 
             game.platformAvailability = {
               ...(game.platformAvailability ?? {}),
-              Mac: appId ? availability.Mac ?? "unknown" : "unknown",
+              Mac: macStatus,
             };
+
+            if (playerCountFilterActive && appId) {
+              const igdbLookup = await getSafeSteamAppMultiplayer(appId);
+              const summary = summarizeIgdbMultiplayer(igdbLookup);
+
+              game.maxPlayers = summary.onlineMax;
+              if (summary.onlineMax !== null) {
+                game.minPlayers = 1;
+                game.coopOnline = true;
+              }
+            }
 
             return filterGames([game], serverFilters)[0] ?? null;
           },

@@ -5,6 +5,7 @@ export type PlatformAvailability = Partial<Record<Platform, PlatformStatus>>;
 
 const STEAM_CACHE_TTL_MS = 1000 * 60 * 60;
 const STEAM_TRANSIENT_COOLDOWN_MS = 1000 * 10;
+const STEAM_REQUEST_TIMEOUT_MS = 5000;
 const STEAM_MAX_RETRIES = 2;
 const steamStatusCache = new Map<string, { expiresAt: number; status: PlatformStatus }>();
 const steamTransientCooldown = new Map<string, number>();
@@ -134,6 +135,7 @@ async function fetchSteamMacStatusUncached(appId: string): Promise<PlatformStatu
         `https://store.steampowered.com/api/appdetails?appids=${appId}`,
         {
           cache: "no-store",
+          signal: AbortSignal.timeout(STEAM_REQUEST_TIMEOUT_MS),
         },
       );
 
@@ -217,15 +219,19 @@ export async function getSteamPlatformAvailability(
   rawgGame: unknown,
   appId?: string | null,
 ): Promise<PlatformAvailability> {
-  const resolvedAppId = appId === undefined
-    ? await getSteamAppIdFromGame(rawgGame)
-    : appId;
+  try {
+    const resolvedAppId = appId === undefined
+      ? await getSteamAppIdFromGame(rawgGame)
+      : appId;
 
-  if (!resolvedAppId) {
+    if (!resolvedAppId) {
+      return { Mac: "unknown" };
+    }
+
+    return {
+      Mac: await fetchSteamMacStatus(resolvedAppId),
+    };
+  } catch {
     return { Mac: "unknown" };
   }
-
-  return {
-    Mac: await fetchSteamMacStatus(resolvedAppId),
-  };
 }

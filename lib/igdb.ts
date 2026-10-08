@@ -463,3 +463,38 @@ export function summarizeIgdbMultiplayer(lookup: IgdbSteamMultiplayerLookup): Ig
     windowsMode: null,
   };
 }
+
+const IGDB_LOOKUP_CACHE_TTL_MS = 1000 * 60 * 60; // 1 hora
+const igdbLookupCache = new Map<string, { expiresAt: number; data: IgdbSteamMultiplayerLookup }>();
+
+export async function getSafeSteamAppMultiplayer(
+  steamAppId: string | number,
+): Promise<IgdbSteamMultiplayerLookup> {
+  const normalizedId = String(steamAppId).trim();
+  const cached = igdbLookupCache.get(normalizedId);
+  const now = Date.now();
+
+  if (cached && cached.expiresAt > now) {
+    return cached.data;
+  }
+
+  try {
+    const data = await lookupSteamAppMultiplayer(normalizedId);
+    igdbLookupCache.set(normalizedId, {
+      expiresAt: now + IGDB_LOOKUP_CACHE_TTL_MS,
+      data,
+    });
+    return data;
+  } catch (error) {
+    console.error(`Erro ao consultar IGDB para Steam AppID ${normalizedId}:`, error);
+    const fallback: IgdbSteamMultiplayerLookup = {
+      steamAppId: normalizedId,
+      externalGames: [],
+      igdbGameId: null,
+      game: null,
+      multiplayerModes: [],
+      platforms: [],
+    };
+    return fallback;
+  }
+}

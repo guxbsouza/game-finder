@@ -22,8 +22,8 @@ export type Game = {
   genres: Genre[];
   tags?: string[];
   platforms: Platform[];
-  minPlayers: number;
-  maxPlayers: number;
+  minPlayers: number | null;
+  maxPlayers: number | null;
   coopOnline: boolean;
   coopLocal: boolean;
   platformAvailability?: Partial<Record<Platform, PlatformStatus>>;

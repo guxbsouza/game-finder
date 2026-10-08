@@ -5,6 +5,10 @@ function minimumPlayersRequired(count: PlayerCount): number {
 }
 
 function supportsAtLeast(game: Game, count: PlayerCount): boolean {
+  if (game.maxPlayers === null) {
+    return false;
+  }
+
   return game.maxPlayers >= minimumPlayersRequired(count);
 }
 

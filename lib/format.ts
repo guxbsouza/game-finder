@@ -1,10 +1,14 @@
 import type { Game } from "./types";
 
 export function formatPlayerCount(game: Game): string {
-  if (game.minPlayers === game.maxPlayers) {
-    return game.minPlayers === 1
+  if (game.maxPlayers === null) {
+    return "Jogadores: não informado";
+  }
+
+  if (game.minPlayers === null || game.minPlayers === game.maxPlayers) {
+    return game.maxPlayers === 1
       ? "1 jogador"
-      : `${game.minPlayers} jogadores`;
+      : `${game.maxPlayers} jogadores`;
   }
 
   return `${game.minPlayers}–${game.maxPlayers} jogadores`;

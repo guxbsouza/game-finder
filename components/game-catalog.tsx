@@ -44,6 +44,10 @@ function buildApiUrl(filters: GameFilters, page: number): string {
     params.set("multiplayer", filters.multiplayer.join(","));
   }
 
+  if (filters.playerCounts.length > 0) {
+    params.set("playerCounts", filters.playerCounts.join(","));
+  }
+
   if (filters.genres.length > 0) {
     params.set("genres", filters.genres.join(","));
   }

@@ -119,8 +119,8 @@ export function mapRawgGame(value: unknown): Game | null {
     tags: mapTags(value),
     platforms: mapPlatforms(value),
     // RAWG does not expose structured player-count fields for this mapper.
-    minPlayers: 1,
-    maxPlayers: 1,
+    minPlayers: null,
+    maxPlayers: null,
     ...multiplayer,
   };
 }
