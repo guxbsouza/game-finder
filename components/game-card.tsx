@@ -23,10 +23,7 @@ function canUseNextImage(source: string): boolean {
 }
 
 export function GameCard({ game }: { game: Game }) {
-  const displayPlatforms: Platform[] = [
-    ...(game.platformAvailability?.Mac === "verified" ? ["Mac" as const] : []),
-    ...game.platforms.filter((platform) => platform !== "Mac"),
-  ];
+  const displayPlatforms: Platform[] = game.platforms;
 
   return (
     <article className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900/90 transition hover:border-emerald-400/30">
@@ -70,11 +67,33 @@ export function GameCard({ game }: { game: Game }) {
         </ul>
 
         <ul className="space-y-0.5 text-sm">
-          <li className={game.coopOnline ? "text-emerald-300" : "text-zinc-600"}>
+          <li
+            className={
+              game.coopOnline === true
+                ? "text-emerald-300"
+                : game.coopOnline === null
+                  ? "text-zinc-400"
+                  : "text-zinc-600"
+            }
+          >
             🌐 Coop online
+            {game.coopOnline === null && (
+              <span className="ml-1 text-[11px] text-zinc-500">(não verificado)</span>
+            )}
           </li>
-          <li className={game.coopLocal ? "text-emerald-300" : "text-zinc-600"}>
+          <li
+            className={
+              game.coopLocal === true
+                ? "text-emerald-300"
+                : game.coopLocal === null
+                  ? "text-zinc-400"
+                  : "text-zinc-600"
+            }
+          >
             🏠 Coop local
+            {game.coopLocal === null && (
+              <span className="ml-1 text-[11px] text-zinc-500">(não verificado)</span>
+            )}
           </li>
         </ul>
       </div>

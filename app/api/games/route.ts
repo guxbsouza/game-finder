@@ -1,45 +1,6 @@
 import { NextResponse } from "next/server";
-import { getRawgGames } from "@/lib/rawg";
-import { mapRawgGame } from "@/lib/rawg-mapper";
-import { getSteamAppIdFromGame, getSteamPlatformAvailability } from "@/lib/steam";
-import { getSafeSteamAppMultiplayer, summarizeIgdbMultiplayer } from "@/lib/igdb";
-import { sortBySearchRelevance } from "@/lib/search-relevance";
-import { filterGames } from "@/lib/filter-games";
-import type { Game, GameFilters, Genre, MultiplayerType, Platform, PlatformStatus, PlayerCount } from "@/lib/types";
-
-const SEARCH_CANDIDATE_PAGE_SIZE = 40;
-const MAC_MAX_RAWG_PAGES = 5;
-const MAC_RAWG_PAGE_SIZE = 40;
-const STEAM_CONCURRENCY = 5;
-
-async function mapIncrementally<T, R>(
-  values: T[],
-  limit: number,
-  mapper: (value: T) => Promise<R>,
-  shouldStop: (results: R[]) => boolean,
-): Promise<R[]> {
-  const results: R[] = [];
-  let nextIndex = 0;
-  let stopped = false;
-
-  async function worker() {
-    while (!stopped && nextIndex < values.length) {
-      const index = nextIndex;
-      nextIndex += 1;
-      results[index] = await mapper(values[index]);
-
-      if (shouldStop(results)) {
-        stopped = true;
-      }
-    }
-  }
-
-  await Promise.all(
-    Array.from({ length: Math.min(limit, values.length) }, () => worker()),
-  );
-
-  return results;
-}
+import { getSupabaseGames } from "@/lib/supabase-games";
+import type { Genre, MultiplayerType, Platform, PlayerCount } from "@/lib/types";
 
 function parsePlatforms(searchParams: URLSearchParams): string[] | undefined {
   const repeated = searchParams.getAll("platforms");
@@ -77,25 +38,11 @@ function mapPlatformFilters(values: string[] | undefined): Platform[] {
     .filter((platform): platform is Platform => Boolean(platform));
 }
 
-function getRawgGameId(value: unknown): string | null {
-  if (typeof value !== "object" || value === null) {
-    return null;
-  }
-
-  const id = (value as { id?: unknown }).id;
-
-  return typeof id === "number" && Number.isFinite(id)
-    ? String(id)
-    : typeof id === "string" && id.trim()
-      ? id.trim()
-      : null;
-}
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const search = searchParams.get("search") ?? undefined;
+    const search = searchParams.get("search") ?? "";
     const platforms = parsePlatforms(searchParams);
     const multiplayer = parseCsvParam(searchParams, "multiplayer").filter(
       (value): value is MultiplayerType => value === "online" || value === "local",
@@ -113,165 +60,26 @@ export async function GET(request: Request) {
     const pageSize = Number(searchParams.get("page_size") ?? "20");
 
     const normalizedPage = Number.isFinite(page) ? Math.max(page, 1) : 1;
-    const macFilterActive = platforms?.includes("5") ?? false;
-    const farmingFilterActive = genres.includes("Farming");
-    const playerCountFilterActive = playerCounts.length > 0;
-    const shouldBuildFilteredCatalog = Boolean(
-      search ||
-        platforms?.length ||
-        multiplayer.length ||
-        playerCountFilterActive ||
-        genres.length,
-    );
-    const rawgPlatforms = macFilterActive ? undefined : platforms;
-    const rawgPage = shouldBuildFilteredCatalog ? 1 : normalizedPage;
-    const rawgPageSize = shouldBuildFilteredCatalog
-      ? SEARCH_CANDIDATE_PAGE_SIZE
-      : Number.isFinite(pageSize)
-        ? pageSize
-        : 20;
+    const normalizedPageSize = Number.isFinite(pageSize) ? Math.max(pageSize, 1) : 20;
+    const result = await getSupabaseGames({
+      filters: {
+        search,
+        platforms: mapPlatformFilters(platforms),
+        playerCounts,
+        multiplayer,
+        genres,
+      },
+      page: normalizedPage,
+      pageSize: normalizedPageSize,
+    });
 
-    const rawGamesById = new Map<string, unknown>();
-    const discoveryTags = farmingFilterActive ? ["agriculture", "farming"] : [undefined];
-    let data: Awaited<ReturnType<typeof getRawgGames>> | null = null;
-    const matchedGames: Game[] = [];
-    const requiredGameCount = normalizedPage * pageSize;
-    const canStopEarly = shouldBuildFilteredCatalog && !search;
-    let stoppedEarly = false;
-
-    const serverFilters: GameFilters = {
-      search: search ?? "",
-      platforms: mapPlatformFilters(platforms),
-      playerCounts,
-      multiplayer,
-      genres,
-    };
-
-    for (const discoveryTag of discoveryTags) {
-      for (let candidatePage = rawgPage; ; candidatePage += 1) {
-        const pageData = await getRawgGames({
-          search,
-          tags: discoveryTag ? [discoveryTag] : undefined,
-          platforms: rawgPlatforms,
-          page: candidatePage,
-          pageSize: candidatePage === rawgPage ? rawgPageSize : MAC_RAWG_PAGE_SIZE,
-        });
-
-        if (!data) {
-          data = pageData;
-        }
-
-        const newRawGames: unknown[] = [];
-
-        for (const rawGame of pageData.results) {
-          const rawgGameId = getRawgGameId(rawGame);
-
-          if (rawgGameId && !rawGamesById.has(rawgGameId)) {
-            rawGamesById.set(rawgGameId, rawGame);
-            newRawGames.push(rawGame);
-          }
-        }
-
-        const newMatchedGames = await mapIncrementally(
-          newRawGames,
-          STEAM_CONCURRENCY,
-          async (rawGame) => {
-            let appId: string | null = null;
-            let macStatus: PlatformStatus = "unknown";
-
-            try {
-              appId = await getSteamAppIdFromGame(rawGame);
-              if (appId) {
-                const availability = await getSteamPlatformAvailability(rawGame, appId);
-                macStatus = availability.Mac ?? "unknown";
-              }
-            } catch {
-              macStatus = "unknown";
-            }
-
-            const game = mapRawgGame(rawGame);
-
-            if (!game) {
-              return null;
-            }
-
-            game.platformAvailability = {
-              ...(game.platformAvailability ?? {}),
-              Mac: macStatus,
-            };
-
-            if (playerCountFilterActive && appId) {
-              const igdbLookup = await getSafeSteamAppMultiplayer(appId);
-              const summary = summarizeIgdbMultiplayer(igdbLookup);
-
-              game.maxPlayers = summary.onlineMax;
-              if (summary.onlineMax !== null) {
-                game.minPlayers = 1;
-                game.coopOnline = true;
-              }
-            }
-
-            return filterGames([game], serverFilters)[0] ?? null;
-          },
-          (results) =>
-            canStopEarly &&
-            matchedGames.length + results.filter((game): game is Game => Boolean(game)).length >=
-              requiredGameCount,
-        );
-
-        matchedGames.push(
-          ...newMatchedGames.filter((game): game is Game => Boolean(game)),
-        );
-
-        if (canStopEarly && matchedGames.length >= requiredGameCount) {
-          stoppedEarly = true;
-          break;
-        }
-
-        if (!shouldBuildFilteredCatalog ||
-          pageData.results.length < MAC_RAWG_PAGE_SIZE ||
-          candidatePage >= MAC_MAX_RAWG_PAGES) {
-          break;
-        }
-      }
-
-      if (stoppedEarly) {
-        break;
-      }
-    }
-
-    if (!data) {
-      throw new Error("RAWG não retornou dados de jogos.");
-    }
-
-    const filteredGames = shouldBuildFilteredCatalog
-      ? matchedGames
-      : matchedGames;
-    const rankedGames = search
-      ? sortBySearchRelevance(filteredGames, search)
-      : filteredGames;
-    const pageGames = shouldBuildFilteredCatalog
-      ? rankedGames.slice(
-          (normalizedPage - 1) * pageSize,
-          normalizedPage * pageSize,
-        )
-      : rankedGames;
-
-    const totalCount = shouldBuildFilteredCatalog
-      ? stoppedEarly
-        ? Math.max(rankedGames.length, requiredGameCount + 1)
-        : rankedGames.length
-      : search
-        ? Math.min(data.count ?? pageGames.length, pageGames.length)
-        : data.count ?? pageGames.length;
-
-    return NextResponse.json({ count: totalCount, games: pageGames });
+    return NextResponse.json({ count: result.totalCount, games: result.games });
   } catch (error) {
-    console.error("Erro ao consultar a RAWG:", error);
+    console.error("Erro ao consultar jogos:", error);
 
     return NextResponse.json(
-      { error: "Não foi possível consultar a RAWG." },
-      { status: 500 }
+      { error: "Não foi possível consultar os jogos." },
+      { status: 500 },
     );
   }
 }

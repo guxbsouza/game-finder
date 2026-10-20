@@ -24,8 +24,8 @@ export type Game = {
   platforms: Platform[];
   minPlayers: number | null;
   maxPlayers: number | null;
-  coopOnline: boolean;
-  coopLocal: boolean;
+  coopOnline: boolean | null;
+  coopLocal: boolean | null;
   platformAvailability?: Partial<Record<Platform, PlatformStatus>>;
 };
 

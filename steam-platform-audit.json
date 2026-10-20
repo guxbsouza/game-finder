@@ -1,0 +1,855 @@
+{
+  "generatedAt": "2026-10-16T21:28:59.835Z",
+  "source": {
+    "preview": "preview-output.txt (somente leitura)",
+    "steam": "https://store.steampowered.com/api/appdetails",
+    "supabase": "nao_utilizado"
+  },
+  "summary": {
+    "authorizedCandidatesRead": 26,
+    "successfulSteamQueries": 26,
+    "failedSteamQueries": 0,
+    "confirmed": 26,
+    "manualReviewRequired": 0
+  },
+  "results": [
+    {
+      "expectedName": "Rise of the Tomb Raider",
+      "catalogName": "Rise of the Tomb Raider",
+      "candidateSteamAppId": "391220",
+      "proposed": {
+        "steam_app_id": "391220",
+        "platforms": [
+          "Windows",
+          "Mac"
+        ],
+        "platform_availability": {
+          "Mac": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "Rise of the Tomb Raider™",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Mac",
+          "Linux"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": true,
+          "linux": true
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": [
+        {
+          "platform": "Linux",
+          "proposed": false,
+          "steam": true,
+          "note": "informativo: a regra da proposta preserva plataformas nao-Mac existentes"
+        }
+      ]
+    },
+    {
+      "expectedName": "Apex Legends",
+      "catalogName": "Apex Legends",
+      "candidateSteamAppId": "1172470",
+      "proposed": {
+        "steam_app_id": "1172470",
+        "platforms": [
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "Apex Legends™",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "The Witcher: Enhanced Edition Director's Cut",
+      "catalogName": "The Witcher: Enhanced Edition Director's Cut",
+      "candidateSteamAppId": "20900",
+      "proposed": {
+        "steam_app_id": "20900",
+        "platforms": [
+          "Windows",
+          "Mac"
+        ],
+        "platform_availability": {
+          "Mac": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "The Witcher: Enhanced Edition Director's Cut",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Mac"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": true,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Half-Life 2: Deathmatch",
+      "catalogName": "Half-Life 2: Deathmatch",
+      "candidateSteamAppId": "320",
+      "proposed": {
+        "steam_app_id": "320",
+        "platforms": [
+          "Linux",
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "Half-Life 2: Deathmatch",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Linux"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": true
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Fallout 4",
+      "catalogName": "Fallout 4",
+      "candidateSteamAppId": "377160",
+      "proposed": {
+        "steam_app_id": "377160",
+        "platforms": [
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "Fallout 4",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "LIMBO",
+      "catalogName": "Limbo",
+      "candidateSteamAppId": "48000",
+      "proposed": {
+        "steam_app_id": "48000",
+        "platforms": [
+          "Windows",
+          "Linux",
+          "Mac"
+        ],
+        "platform_availability": {
+          "Mac": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "LIMBO",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Mac"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": true,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": [
+        {
+          "platform": "Linux",
+          "proposed": true,
+          "steam": false,
+          "note": "informativo: a regra da proposta preserva plataformas nao-Mac existentes"
+        }
+      ]
+    },
+    {
+      "expectedName": "PAYDAY 2",
+      "catalogName": "PAYDAY 2",
+      "candidateSteamAppId": "218620",
+      "proposed": {
+        "steam_app_id": "218620",
+        "platforms": [
+          "Linux",
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "PAYDAY 2",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": [
+        {
+          "platform": "Linux",
+          "proposed": true,
+          "steam": false,
+          "note": "informativo: a regra da proposta preserva plataformas nao-Mac existentes"
+        }
+      ]
+    },
+    {
+      "expectedName": "Cyberpunk 2077",
+      "catalogName": "Cyberpunk 2077",
+      "candidateSteamAppId": "1091500",
+      "proposed": {
+        "steam_app_id": "1091500",
+        "platforms": [
+          "Windows",
+          "Mac"
+        ],
+        "platform_availability": {
+          "Mac": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "Cyberpunk 2077",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Mac"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": true,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Team Fortress 2",
+      "catalogName": "Team Fortress 2",
+      "candidateSteamAppId": "440",
+      "proposed": {
+        "steam_app_id": "440",
+        "platforms": [
+          "Linux",
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "Team Fortress 2",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Linux"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": true
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Batman: Arkham Knight",
+      "catalogName": "Batman: Arkham Knight",
+      "candidateSteamAppId": "208650",
+      "proposed": {
+        "steam_app_id": "208650",
+        "platforms": [
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "Batman™: Arkham Knight",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "METAL GEAR SOLID V: The Phantom Pain",
+      "catalogName": "Metal Gear Solid V: The Phantom Pain",
+      "candidateSteamAppId": "287700",
+      "proposed": {
+        "steam_app_id": "287700",
+        "platforms": [
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "METAL GEAR SOLID V: THE PHANTOM PAIN",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "The Witcher 2: Assassins of Kings Enhanced Edition",
+      "catalogName": "The Witcher 2: Assassins of Kings Enhanced Edition",
+      "candidateSteamAppId": "20920",
+      "proposed": {
+        "steam_app_id": "20920",
+        "platforms": [
+          "Mac",
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "The Witcher 2: Assassins of Kings Enhanced Edition",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Mac",
+          "Linux"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": true,
+          "linux": true
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": [
+        {
+          "platform": "Linux",
+          "proposed": false,
+          "steam": true,
+          "note": "informativo: a regra da proposta preserva plataformas nao-Mac existentes"
+        }
+      ]
+    },
+    {
+      "expectedName": "Middle-earth: Shadow of Mordor",
+      "catalogName": "Middle-earth: Shadow of Mordor",
+      "candidateSteamAppId": "241930",
+      "proposed": {
+        "steam_app_id": "241930",
+        "platforms": [
+          "Linux",
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "Middle-earth™: Shadow of Mordor™",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": [
+        {
+          "platform": "Linux",
+          "proposed": true,
+          "steam": false,
+          "note": "informativo: a regra da proposta preserva plataformas nao-Mac existentes"
+        }
+      ]
+    },
+    {
+      "expectedName": "Little Nightmares",
+      "catalogName": "Little Nightmares",
+      "candidateSteamAppId": "424840",
+      "proposed": {
+        "steam_app_id": "424840",
+        "platforms": [
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "Little Nightmares",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "BioShock 2",
+      "catalogName": "BioShock 2",
+      "candidateSteamAppId": "8850",
+      "proposed": {
+        "steam_app_id": "8850",
+        "platforms": [
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "BioShock® 2",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Dark Souls III",
+      "catalogName": "Dark Souls III",
+      "candidateSteamAppId": "374320",
+      "proposed": {
+        "steam_app_id": "374320",
+        "platforms": [
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "DARK SOULS™ III",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Stardew Valley",
+      "catalogName": "Stardew Valley",
+      "candidateSteamAppId": "413150",
+      "proposed": {
+        "steam_app_id": "413150",
+        "platforms": [
+          "Windows",
+          "Mac",
+          "Linux"
+        ],
+        "platform_availability": {
+          "Mac": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "Stardew Valley",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Mac",
+          "Linux"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": true,
+          "linux": true
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Mirror's Edge",
+      "catalogName": "Mirror's Edge",
+      "candidateSteamAppId": "17410",
+      "proposed": {
+        "steam_app_id": "17410",
+        "platforms": [
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "Mirror's Edge™",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "BioShock Remastered",
+      "catalogName": "BioShock Remastered",
+      "candidateSteamAppId": "409710",
+      "proposed": {
+        "steam_app_id": "409710",
+        "platforms": [
+          "Mac",
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "BioShock™ Remastered",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Mac"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": true,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Dota 2",
+      "catalogName": "Dota 2",
+      "candidateSteamAppId": "570",
+      "proposed": {
+        "steam_app_id": "570",
+        "platforms": [
+          "Linux",
+          "Mac",
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "Dota 2",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Mac",
+          "Linux"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": true,
+          "linux": true
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Warframe",
+      "catalogName": "Warframe",
+      "candidateSteamAppId": "230410",
+      "proposed": {
+        "steam_app_id": "230410",
+        "platforms": [
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "Warframe",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Destiny 2",
+      "catalogName": "Destiny 2",
+      "candidateSteamAppId": "1085660",
+      "proposed": {
+        "steam_app_id": "1085660",
+        "platforms": [
+          "Windows"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable"
+        }
+      },
+      "steam": {
+        "officialName": "Destiny 2",
+        "productType": "game",
+        "platforms": [
+          "Windows"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": false
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Portal",
+      "catalogName": "Portal",
+      "candidateSteamAppId": "400",
+      "proposed": {
+        "steam_app_id": "400",
+        "platforms": [
+          "Windows",
+          "Linux"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable",
+          "Linux": "verified",
+          "Windows": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "Portal",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Linux"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": true
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Portal 2",
+      "catalogName": "Portal 2",
+      "candidateSteamAppId": "620",
+      "proposed": {
+        "steam_app_id": "620",
+        "platforms": [
+          "Windows",
+          "Linux"
+        ],
+        "platform_availability": {
+          "Mac": "unavailable",
+          "Linux": "verified",
+          "Windows": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "Portal 2",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Linux"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": false,
+          "linux": true
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Borderlands 2",
+      "catalogName": "Borderlands 2",
+      "candidateSteamAppId": "49520",
+      "proposed": {
+        "steam_app_id": "49520",
+        "platforms": [
+          "Windows",
+          "Mac",
+          "Linux"
+        ],
+        "platform_availability": {
+          "Mac": "verified",
+          "Linux": "verified",
+          "Windows": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "Borderlands 2",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Mac",
+          "Linux"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": true,
+          "linux": true
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    },
+    {
+      "expectedName": "Hollow Knight",
+      "catalogName": "Hollow Knight",
+      "candidateSteamAppId": "367520",
+      "proposed": {
+        "steam_app_id": "367520",
+        "platforms": [
+          "Windows",
+          "Mac",
+          "Linux"
+        ],
+        "platform_availability": {
+          "Mac": "verified",
+          "Linux": "verified",
+          "Windows": "verified"
+        }
+      },
+      "steam": {
+        "officialName": "Hollow Knight",
+        "productType": "game",
+        "platforms": [
+          "Windows",
+          "Mac",
+          "Linux"
+        ],
+        "platformFlags": {
+          "windows": true,
+          "mac": true,
+          "linux": true
+        }
+      },
+      "status": "confirmado",
+      "reviewReasons": [],
+      "nonMacPlatformDifferences": []
+    }
+  ]
+}

@@ -1,20 +1,22 @@
 import type { Game, GameFilters, PlayerCount } from "./types";
 
-function minimumPlayersRequired(count: PlayerCount): number {
-  return count === "5+" ? 5 : count;
-}
-
 function supportsAtLeast(game: Game, count: PlayerCount): boolean {
   if (game.maxPlayers === null) {
     return false;
   }
 
-  return game.maxPlayers >= minimumPlayersRequired(count);
+  if (count === "5+") {
+    return game.maxPlayers >= 5;
+  }
+
+  return game.minPlayers !== null &&
+    game.minPlayers <= count &&
+    game.maxPlayers >= count;
 }
 
 function matchesGenre(game: Game, genre: GameFilters["genres"][number]): boolean {
   if (genre === "Farming") {
-    return (game.tags ?? []).some(
+    return game.genres.includes(genre) || (game.tags ?? []).some(
       (tag) => tag === "agriculture" || tag === "farming",
     );
   }
@@ -51,9 +53,9 @@ export function filterGames(games: Game[], filters: GameFilters): Game[] {
 
     if (filters.multiplayer.length > 0) {
       const matchesOnline =
-        filters.multiplayer.includes("online") && game.coopOnline;
+        filters.multiplayer.includes("online") && game.coopOnline === true;
       const matchesLocal =
-        filters.multiplayer.includes("local") && game.coopLocal;
+        filters.multiplayer.includes("local") && game.coopLocal === true;
 
       if (!matchesOnline && !matchesLocal) {
         return false;

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { filterGames } from "@/lib/filter-games";
 import { EMPTY_FILTERS } from "@/lib/types";
 import type { Game, GameFilters, Platform } from "@/lib/types";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
@@ -9,7 +8,6 @@ import { Filters } from "./filters";
 import { GameCard } from "./game-card";
 
 const PAGE_SIZE = 20;
-const RAWG_CANDIDATE_PAGE_SIZE = 40;
 const DEBOUNCE_MS = 400;
 
 const RAWG_PLATFORM_IDS: Record<Platform, number> = {
@@ -53,7 +51,7 @@ function buildApiUrl(filters: GameFilters, page: number): string {
   }
 
   params.set("page", String(page));
-  params.set("page_size", String(hasSearch ? RAWG_CANDIDATE_PAGE_SIZE : PAGE_SIZE));
+  params.set("page_size", String(PAGE_SIZE));
 
   return `/api/games?${params.toString()}`;
 }
@@ -205,17 +203,7 @@ export function GameCatalog() {
     };
   }, [filters]);
 
-  const visibleGames = useMemo(
-    () =>
-      sortBySearchRelevance(
-        filterGames(games, {
-          ...filters,
-          search: "",
-        }),
-        filters.search,
-      ),
-    [filters, games],
-  );
+  const visibleGames = games;
 
   const handleFiltersChange = (nextFilters: GameFilters) => {
     setFilters(nextFilters);
@@ -240,7 +228,7 @@ export function GameCatalog() {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
       <Filters
         filters={filters}
-        resultCount={visibleGames.length}
+        resultCount={totalCount}
         onChange={handleFiltersChange}
       />
 
